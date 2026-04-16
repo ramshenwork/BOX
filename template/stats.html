@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CricketLive — Stats</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#050508;--bg2:#0a0a12;--bg3:#0f0f1a;--card:#111120;--card2:#16162a;--neon:#00ffcc;--neon2:#00ccff;--neon3:#ff00aa;--neon4:#ffcc00;--red:#ff3366;--text:#e8e8ff;--muted:#6666aa;--border:rgba(0,255,204,0.15);--glow:0 0 20px rgba(0,255,204,0.3);--radius:12px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,204,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,204,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--neon);}
+.app{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:20px 16px;}
+
+.header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.logo{font-family:'Orbitron',monospace;font-size:1.2rem;font-weight:900;background:linear-gradient(135deg,var(--neon),var(--neon2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.logo span{color:var(--neon3);-webkit-text-fill-color:var(--neon3);}
+.nav{display:flex;gap:12px;}
+.nav a{color:var(--muted);text-decoration:none;font-weight:600;font-size:0.9rem;letter-spacing:1px;}
+.nav a:hover{color:var(--neon);}
+
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.tab{padding:10px 24px;cursor:pointer;font-weight:700;font-size:0.9rem;letter-spacing:1px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.2s;}
+.tab.active{color:var(--neon);border-bottom-color:var(--neon);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;overflow-x:auto;}
+.card-title{font-family:'Orbitron',monospace;font-size:0.7rem;font-weight:700;color:var(--neon);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';display:inline-block;width:3px;height:14px;background:var(--neon);border-radius:2px;}
+
+.stats-table{width:100%;border-collapse:collapse;font-size:0.9rem;min-width:600px;}
+.stats-table th{font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;font-weight:600;white-space:nowrap;}
+.stats-table td{padding:10px 10px;border-bottom:1px solid rgba(255,255,255,0.04);font-weight:500;}
+.stats-table tr:hover td{background:rgba(0,255,204,0.03);}
+.stats-table tr:last-child td{border-bottom:none;}
+.player-cell{font-weight:700;color:var(--text);}
+.num-cell{font-family:'Orbitron',monospace;font-size:0.85rem;}
+.highlight{color:var(--neon4)!important;}
+.team-badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:0.65rem;font-weight:700;border:1px solid var(--border);color:var(--muted);margin-left:6px;}
+
+.match-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+.match-teams{font-weight:700;font-size:1rem;}
+.match-score{font-family:'Orbitron',monospace;font-size:0.85rem;color:var(--neon2);}
+.match-result{font-size:0.85rem;color:var(--muted);}
+.match-status{padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:700;letter-spacing:1px;}
+.status-completed{background:rgba(0,255,204,0.1);color:var(--neon);border:1px solid rgba(0,255,204,0.2);}
+.status-live{background:rgba(255,51,102,0.1);color:var(--red);border:1px solid rgba(255,51,102,0.2);}
+.status-aborted{background:rgba(102,102,170,0.1);color:var(--muted);border:1px solid var(--border);}
+
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-icon{font-size:3rem;margin-bottom:12px;}
+.loading{text-align:center;padding:40px;color:var(--muted);font-family:'Orbitron',monospace;font-size:0.8rem;letter-spacing:2px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">Cricket<span>Live</span></div>
+    <div class="nav">
+      <a href="/">🏏 Scorer</a>
+      <a href="/stats" style="color:var(--neon);">📊 Stats</a>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('matches')">🏟 Matches</div>
+    <div class="tab" onclick="switchTab('batting')">🏏 Batting</div>
+    <div class="tab" onclick="switchTab('bowling')">⚡ Bowling</div>
+  </div>
+
+  <!-- MATCHES -->
+  <div class="tab-content active" id="tab-matches">
+    <div class="loading" id="matchesLoading">LOADING MATCHES...</div>
+    <div id="matchesList"></div>
+  </div>
+
+  <!-- BATTING STATS -->
+  <div class="tab-content" id="tab-batting">
+    <div class="card">
+      <div class="card-title">Career Batting Averages</div>
+      <div class="loading" id="battingLoading">LOADING...</div>
+      <table class="stats-table" id="battingStatsTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Player</th><th>Inn</th><th>Runs</th><th>HS</th>
+            <th>Avg</th><th>SR</th><th>4s</th><th>6s</th><th>50s</th><th>100s</th>
+          </tr>
+        </thead>
+        <tbody id="battingStatsBody"></tbody>
+      </table>
+      <div class="empty-state" id="battingEmpty" style="display:none;">
+        <div class="empty-icon">🏏</div>
+        <p>No batting data yet. Play some matches!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOWLING STATS -->
+  <div class="tab-content" id="tab-bowling">
+    <div class="card">
+      <div class="card-title">Career Bowling Averages</div>
+      <div class="loading" id="bowlingLoading">LOADING...</div>
+      <table class="stats-table" id="bowlingStatsTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Player</th><th>Inn</th><th>Overs</th><th>Wickets</th>
+            <th>Runs</th><th>Best</th><th>Avg</th><th>Economy</th>
+          </tr>
+        </thead>
+        <tbody id="bowlingStatsBody"></tbody>
+      </table>
+      <div class="empty-state" id="bowlingEmpty" style="display:none;">
+        <div class="empty-icon">⚡</div>
+        <p>No bowling data yet. Play some matches!</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if(name === 'batting') loadBatting();
+  if(name === 'bowling') loadBowling();
+}
+
+// ── Matches ──────────────────────────────────────────────────
+async function loadMatches() {
+  const res = await fetch('/api/matches');
+  const matches = await res.json();
+  document.getElementById('matchesLoading').style.display = 'none';
+  const list = document.getElementById('matchesList');
+
+  if(!matches.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🏟</div><p>No matches recorded yet.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = matches.map(m => {
+    const inn1 = m.inn1_runs != null ? `${m.inn1_runs}/${m.inn1_wkts}` : '—';
+    const inn2 = m.inn2_runs != null ? `${m.inn2_runs}/${m.inn2_wkts}` : '—';
+    const statusCls = m.status === 'completed' ? 'status-completed' : m.status === 'live' ? 'status-live' : 'status-aborted';
+    const date = new Date(m.created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'});
+    const watchLink = m.status === 'live' ? `<a href="/watch/${m.id}" style="color:var(--neon2);font-size:0.8rem;text-decoration:none;">👁 Watch Live</a>` : '';
+    return `
+      <div class="match-card">
+        <div>
+          <div class="match-teams">${m.team1} vs ${m.team2}</div>
+          <div class="match-result">${m.result || (m.status === 'live' ? 'In Progress' : 'Match aborted')} &nbsp;·&nbsp; ${date}</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="match-score">${m.batting_first}: ${inn1} &nbsp;|&nbsp; ${inn2}</div>
+          <div style="margin-top:6px;display:flex;gap:8px;justify-content:flex-end;align-items:center;">
+            ${watchLink}
+            <span class="match-status ${statusCls}">${m.status.toUpperCase()}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── Batting ──────────────────────────────────────────────────
+async function loadBatting() {
+  document.getElementById('battingLoading').style.display = 'block';
+  document.getElementById('battingStatsTable').style.display = 'none';
+  const res = await fetch('/api/stats/batting');
+  const data = await res.json();
+  document.getElementById('battingLoading').style.display = 'none';
+
+  if(!data.length) {
+    document.getElementById('battingEmpty').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('battingStatsTable').style.display = 'table';
+  document.getElementById('battingStatsBody').innerHTML = data.map((p, i) => `
+    <tr>
+      <td class="player-cell">${p.player_name}<span class="team-badge">${p.team}</span></td>
+      <td class="num-cell">${p.innings}</td>
+      <td class="num-cell highlight">${p.total_runs}</td>
+      <td class="num-cell">${p.high_score}</td>
+      <td class="num-cell">${p.avg_runs}</td>
+      <td class="num-cell">${p.strike_rate || '—'}</td>
+      <td class="num-cell">${p.total_fours}</td>
+      <td class="num-cell">${p.total_sixes}</td>
+      <td class="num-cell">${p.fifties}</td>
+      <td class="num-cell">${p.hundreds}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Bowling ──────────────────────────────────────────────────
+async function loadBowling() {
+  document.getElementById('bowlingLoading').style.display = 'block';
+  document.getElementById('bowlingStatsTable').style.display = 'none';
+  const res = await fetch('/api/stats/bowling');
+  const data = await res.json();
+  document.getElementById('bowlingLoading').style.display = 'none';
+
+  if(!data.length) {
+    document.getElementById('bowlingEmpty').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('bowlingStatsTable').style.display = 'table';
+  document.getElementById('bowlingStatsBody').innerHTML = data.map(p => {
+    const overs = Math.floor(p.total_balls / 6) + '.' + (p.total_balls % 6);
+    return `
+      <tr>
+        <td class="player-cell">${p.player_name}<span class="team-badge">${p.team}</span></td>
+        <td class="num-cell">${p.innings}</td>
+        <td class="num-cell">${overs}</td>
+        <td class="num-cell highlight">${p.total_wickets}</td>
+        <td class="num-cell">${p.total_runs}</td>
+        <td class="num-cell">${p.best_bowling}W</td>
+        <td class="num-cell">${p.bowling_avg || '—'}</td>
+        <td class="num-cell">${p.economy}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+loadMatches();
+</script>
+</body>
+</html>

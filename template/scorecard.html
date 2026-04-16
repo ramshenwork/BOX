@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CricketLive — Scorecard</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#050508;--bg2:#0a0a12;--bg3:#0f0f1a;
+  --card:#111120;--card2:#16162a;
+  --neon:#00ffcc;--neon2:#00ccff;--neon3:#ff00aa;--neon4:#ffcc00;
+  --red:#ff3366;--green:#00ff88;
+  --text:#e8e8ff;--muted:#6666aa;
+  --border:rgba(0,255,204,0.15);
+  --glow:0 0 20px rgba(0,255,204,0.3);
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,204,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,204,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:var(--bg2);}::-webkit-scrollbar-thumb{background:var(--neon);}
+.app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:0 0 40px;}
+
+/* HEADER */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  background:rgba(5,5,8,0.95);backdrop-filter:blur(10px);
+  position:sticky;top:0;z-index:100;
+}
+.logo{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:900;
+  background:linear-gradient(135deg,var(--neon),var(--neon2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.nav-links{display:flex;gap:16px;align-items:center;}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.85rem;font-weight:600;letter-spacing:1px;transition:color 0.2s;}
+.nav-links a:hover{color:var(--neon);}
+.live-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.3);color:var(--red);font-size:0.7rem;font-weight:700;letter-spacing:1px;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
+
+/* MAIN TABS */
+.main-tabs{
+  display:flex;border-bottom:1px solid var(--border);
+  background:var(--bg2);position:sticky;top:53px;z-index:90;
+}
+.main-tab{
+  flex:1;text-align:center;padding:14px 10px;cursor:pointer;
+  font-family:'Orbitron',monospace;font-size:0.7rem;font-weight:700;letter-spacing:2px;
+  color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.2s;
+}
+.main-tab.active{color:var(--neon);border-bottom-color:var(--neon);}
+.main-tab-content{display:none;padding:16px 20px;}
+.main-tab-content.active{display:block;}
+
+/* CARD */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:14px;}
+.card-title{font-family:'Orbitron',monospace;font-size:0.68rem;font-weight:700;color:var(--neon);letter-spacing:3px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';display:inline-block;width:3px;height:13px;background:var(--neon);border-radius:2px;}
+
+/* ── LIVE SCORE TAB ── */
+.score-hero{
+  background:linear-gradient(135deg,var(--card),var(--card2));
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px 20px;margin-bottom:14px;position:relative;overflow:hidden;
+}
+.score-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon),var(--neon2),var(--neon3));}
+.sh-team{font-size:0.7rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}
+.sh-score{font-family:'Orbitron',monospace;font-size:3rem;font-weight:900;line-height:1;background:linear-gradient(135deg,#fff,var(--neon));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.sh-overs{color:var(--muted);font-size:0.95rem;margin-top:5px;font-weight:600;}
+.sh-meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;}
+.sh-meta-item{display:flex;flex-direction:column;gap:2px;}
+.sh-label{font-size:0.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase;}
+.sh-value{font-family:'Orbitron',monospace;font-size:0.85rem;font-weight:700;color:var(--neon2);}
+.target-pill{margin-top:12px;padding:9px 14px;background:rgba(255,0,170,0.07);border:1px solid rgba(255,0,170,0.2);border-radius:8px;font-weight:600;color:var(--neon3);font-size:0.9rem;}
+
+/* At crease / bowling cards */
+.player-strip{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.player-strip:last-child{border-bottom:none;}
+.ps-name{font-weight:700;font-size:0.95rem;}
+.ps-name.neon{color:var(--neon);}
+.ps-name.pink{color:var(--neon3);}
+.ps-sub{font-size:0.72rem;color:var(--muted);margin-top:2px;}
+.ps-stat{font-family:'Orbitron',monospace;font-size:0.85rem;text-align:right;}
+.ps-stat-sub{font-size:0.7rem;color:var(--muted);text-align:right;}
+
+.over-dots{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
+.od{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:0.6rem;font-weight:700;border:2px solid;}
+.od-dot{border-color:var(--muted);color:var(--muted);}
+.od-run{border-color:var(--neon);color:var(--neon);}
+.od-four{border-color:var(--neon4);color:var(--neon4);}
+.od-six{border-color:var(--neon3);color:var(--neon3);}
+.od-wicket{border-color:var(--red);color:var(--red);}
+.od-extra{border-color:var(--neon2);color:var(--neon2);}
+
+.fow-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.fow-chip{padding:3px 10px;border-radius:20px;border:1px solid rgba(255,51,102,0.3);background:rgba(255,51,102,0.07);font-size:0.75rem;font-family:'Orbitron',monospace;color:var(--red);}
+
+/* ── SCORECARD TAB ── */
+.innings-header{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;background:var(--card2);border-radius:8px;
+  margin-bottom:2px;cursor:pointer;border:1px solid var(--border);
+}
+.ih-team{font-family:'Orbitron',monospace;font-size:0.8rem;font-weight:700;color:var(--neon);}
+.ih-score{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;color:#fff;}
+.ih-chevron{color:var(--muted);transition:transform 0.2s;font-size:0.8rem;}
+.ih-chevron.open{transform:rotate(180deg);}
+.innings-body{overflow:hidden;transition:max-height 0.3s ease;max-height:0;}
+.innings-body.open{max-height:2000px;}
+
+.sc-table{width:100%;border-collapse:collapse;font-size:0.88rem;}
+.sc-table th{font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--border);text-align:left;font-weight:600;}
+.sc-table th:not(:first-child){text-align:right;}
+.sc-table td{padding:8px 8px;border-bottom:1px solid rgba(255,255,255,0.03);}
+.sc-table td:not(:first-child){text-align:right;font-family:'Orbitron',monospace;font-size:0.8rem;}
+.sc-table tr:last-child td{border-bottom:none;}
+.sc-table tr:hover td{background:rgba(0,255,204,0.02);}
+.bat-name{font-weight:700;}
+.bat-active{color:var(--neon);}
+.bat-out{color:var(--muted);}
+.bat-dnb{color:var(--muted);font-style:italic;opacity:0.55;}
+.bat-outmode{font-size:0.72rem;color:var(--muted);display:block;margin-top:1px;}
+.runs-cell{font-size:0.95rem!important;font-weight:700!important;}
+.highlight-four{color:var(--neon4);}
+.highlight-six{color:var(--neon3);}
+.section-divider{height:1px;background:var(--border);margin:10px 0;}
+.sc-extras{padding:8px;color:var(--muted);font-size:0.85rem;}
+.sc-total{padding:10px 8px;font-family:'Orbitron',monospace;font-size:0.9rem;font-weight:700;border-top:1px solid var(--border);display:flex;justify-content:space-between;}
+
+/* ── IMPACT TAB ── */
+.mom-card{
+  background:linear-gradient(135deg,rgba(255,204,0,0.07),rgba(255,0,170,0.07));
+  border:1px solid rgba(255,204,0,0.25);border-radius:var(--radius);
+  padding:20px;margin-bottom:16px;text-align:center;position:relative;overflow:hidden;
+}
+.mom-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon4),var(--neon3));}
+.mom-trophy{font-size:2.5rem;margin-bottom:8px;}
+.mom-label{font-family:'Orbitron',monospace;font-size:0.65rem;letter-spacing:3px;color:var(--neon4);margin-bottom:4px;}
+.mom-name{font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:900;color:#fff;margin-bottom:6px;}
+.mom-team{font-size:0.85rem;color:var(--muted);margin-bottom:10px;}
+.mom-score{font-family:'Orbitron',monospace;font-size:2rem;font-weight:900;background:linear-gradient(135deg,var(--neon4),var(--neon3));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.mom-reasoning{font-size:0.85rem;color:var(--muted);margin-top:10px;line-height:1.5;}
+
+.mdi-bar{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;
+  background:var(--card2);border-radius:8px;border:1px solid var(--border);
+  margin-bottom:14px;font-size:0.85rem;
+}
+.mdi-val{font-family:'Orbitron',monospace;font-weight:700;font-size:1rem;color:var(--neon2);}
+
+.impact-row{
+  display:flex;align-items:center;gap:12px;padding:12px 0;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.impact-row:last-child{border-bottom:none;}
+.imp-rank{font-family:'Orbitron',monospace;font-size:0.75rem;font-weight:700;color:var(--muted);width:22px;text-align:right;}
+.imp-rank.gold{color:var(--neon4);}
+.imp-rank.silver{color:#aaa;}
+.imp-rank.bronze{color:#cd7f32;}
+.imp-name{flex:1;font-weight:700;font-size:0.95rem;}
+.imp-team{font-size:0.72rem;color:var(--muted);}
+.imp-bars{flex:2;display:flex;flex-direction:column;gap:3px;}
+.imp-bar-row{display:flex;align-items:center;gap:6px;font-size:0.7rem;color:var(--muted);}
+.imp-bar-label{width:40px;text-align:right;font-size:0.65rem;}
+.imp-bar-bg{flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.imp-bar-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.imp-bar-bat{background:linear-gradient(90deg,var(--neon),var(--neon2));}
+.imp-bar-bowl{background:linear-gradient(90deg,var(--neon3),var(--neon4));}
+.imp-bar-field{background:var(--green);}
+.imp-score{font-family:'Orbitron',monospace;font-size:1rem;font-weight:900;color:var(--neon);min-width:50px;text-align:right;}
+
+.impact-breakdown{
+  display:none;padding:10px 12px;background:var(--card2);border-radius:8px;
+  margin-top:6px;font-size:0.8rem;
+}
+.impact-breakdown.open{display:block;}
+.breakdown-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
+.bk-item{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.bk-val{font-family:'Orbitron',monospace;font-size:0.8rem;font-weight:700;color:var(--neon2);}
+.bk-label{font-size:0.6rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;text-align:center;}
+.reasoning-text{color:var(--muted);margin-top:8px;line-height:1.5;font-size:0.82rem;}
+
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.loading-pulse{text-align:center;padding:32px;font-family:'Orbitron',monospace;font-size:0.75rem;color:var(--muted);letter-spacing:2px;animation:fadeInOut 1.5s infinite;}
+@keyframes fadeInOut{0%,100%{opacity:0.4;}50%{opacity:1;}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">CricketLive</div>
+    <div class="nav-links">
+      <span class="live-pill" id="livePill" style="display:none;"><span class="live-dot"></span>LIVE</span>
+      <a href="/">🏏 Scorer</a>
+      <a href="/stats">📊 Stats</a>
+      <a href="javascript:history.back()">← Back</a>
+    </div>
+  </div>
+
+  <div class="main-tabs">
+    <div class="main-tab active" onclick="showMainTab('live')">LIVE SCORE</div>
+    <div class="main-tab" onclick="showMainTab('scorecard')">SCORECARD</div>
+    <div class="main-tab" onclick="showMainTab('impact')">⚡ IMPACT</div>
+  </div>
+
+  <!-- ════ LIVE SCORE TAB ════ -->
+  <div class="main-tab-content active" id="tab-live">
+    <div id="liveScoreContent">
+      <div class="loading-pulse" id="liveLoading">CONNECTING TO LIVE MATCH...</div>
+    </div>
+  </div>
+
+  <!-- ════ SCORECARD TAB ════ -->
+  <div class="main-tab-content" id="tab-scorecard">
+    <div id="scorecardContent">
+      <div class="loading-pulse" id="scLoading">LOADING SCORECARD...</div>
+    </div>
+  </div>
+
+  <!-- ════ IMPACT TAB ════ -->
+  <div class="main-tab-content" id="tab-impact">
+    <div id="impactContent">
+      <div class="loading-pulse" id="impLoading">COMPUTING IMPACT SCORES...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const MATCH_ID = parseInt("{{ match_id }}");
+let currentState = null;
+let scorecardData = null;
+let impactData = null;
+let ws = null;
+let reconnectTimer = null;
+
+// ─── Tab Switching ────────────────────────────────────────────
+function showMainTab(name) {
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.main-tab-content').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if(name === 'scorecard' && !scorecardData) loadScorecard();
+  if(name === 'impact') loadImpact();
+}
+
+// ─── WebSocket ────────────────────────────────────────────────
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  ws = new WebSocket(`${proto}://${location.host}/ws/watch/${MATCH_ID}`);
+  ws.onopen = () => {
+    document.getElementById('livePill').style.display = 'inline-flex';
+    clearTimeout(reconnectTimer);
+  };
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if(msg.type === 'score_update') {
+      currentState = msg.state;
+      renderLiveScore(msg.state);
+      if(scorecardData) loadScorecard();
+    }
+    if(msg.type === 'impact_update') {
+      impactData = msg.data;
+      if(document.getElementById('tab-impact').classList.contains('active')) {
+        renderImpact(msg.data);
+      }
+    }
+    if(msg.type === 'match_complete' || msg.type === 'match_aborted') {
+      document.getElementById('livePill').style.display = 'none';
+      loadImpact();
+    }
+  };
+  ws.onclose = () => {
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+  ws.onerror = () => ws.close();
+}
+
+// ─── Live Score Render ────────────────────────────────────────
+function renderLiveScore(s) {
+  document.getElementById('liveLoading').style.display = 'none';
+  const rr = s.balls > 0 ? (s.runs / (s.balls / 6)).toFixed(2) : '0.00';
+
+  const dotMap = {four:'od-four',six:'od-six',wicket:'od-wicket',wd:'od-extra',nb:'od-extra',run:'od-run',dot:'od-dot'};
+  const overDotsHtml = (s.currentOver || []).map(b =>
+    `<div class="od ${dotMap[b.type]||'od-dot'}">${b.label}</div>`
+  ).join('');
+
+  let targetHtml = '';
+  if(s.target) {
+    const needed = s.target - s.runs;
+    const ballsLeft = s.ballsLeft || '?';
+    const rrr = s.rrr || '—';
+    targetHtml = `<div class="target-pill">🎯 Target: ${s.target} &nbsp;|&nbsp; Need <b>${needed}</b> runs &nbsp;|&nbsp; RRR: <b>${rrr}</b></div>`;
+  }
+
+  let metaHtml = `
+    <div class="sh-meta-item"><div class="sh-label">Run Rate</div><div class="sh-value">${rr}</div></div>
+    <div class="sh-meta-item"><div class="sh-label">Innings</div><div class="sh-value">${s.innings === 1 ? '1st' : '2nd'}</div></div>
+    <div class="sh-meta-item"><div class="sh-label">Extras</div><div class="sh-value">${s.extras} (${s.wides||0}wd, ${s.nbs||0}nb)</div></div>
+  `;
+
+  const fowChips = (s.fow || []).map(f =>
+    `<div class="fow-chip">${f.wicket}-${f.score} (${f.batter})</div>`
+  ).join('');
+
+  document.getElementById('liveScoreContent').innerHTML = `
+    <div class="score-hero">
+      <div class="sh-team">${s.battingTeam || ''} BATTING</div>
+      <div class="sh-score">${s.runs}/${s.wickets}</div>
+      <div class="sh-overs">${s.overs || '0.0'} overs</div>
+      <div class="sh-meta">${metaHtml}</div>
+      ${targetHtml}
+    </div>
+
+    <div class="card">
+      <div class="card-title">This Over</div>
+      <div class="over-dots">${overDotsHtml || '<span style="color:var(--muted);font-size:0.8rem;">Over not started</span>'}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">At The Crease</div>
+      <div class="player-strip">
+        <div>
+          <div class="ps-name neon">⚡ ${s.striker?.name || '—'} *</div>
+          <div class="ps-sub">On strike</div>
+        </div>
+        <div>
+          <div class="ps-stat">${s.striker?.runs || 0} (${s.striker?.balls || 0})</div>
+          <div class="ps-stat-sub">SR: ${s.striker?.balls > 0 ? (s.striker.runs/s.striker.balls*100).toFixed(0) : '—'}</div>
+        </div>
+      </div>
+      <div class="player-strip">
+        <div>
+          <div class="ps-name">${s.nonStriker?.name || '—'}</div>
+          <div class="ps-sub">Non-striker</div>
+        </div>
+        <div>
+          <div class="ps-stat">${s.nonStriker?.runs || 0} (${s.nonStriker?.balls || 0})</div>
+          <div class="ps-stat-sub">SR: ${s.nonStriker?.balls > 0 ? (s.nonStriker.runs/s.nonStriker.balls*100).toFixed(0) : '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Bowling</div>
+      <div class="player-strip">
+        <div>
+          <div class="ps-name pink">🎳 ${s.bowler?.name || '—'}</div>
+          <div class="ps-sub">Current bowler</div>
+        </div>
+        <div>
+          <div class="ps-stat">${s.bowler?.overs || '0.0'} · ${s.bowler?.wickets || 0}w · ${s.bowler?.runs || 0}r</div>
+        </div>
+      </div>
+    </div>
+
+    ${fowChips ? `<div class="card"><div class="card-title">Fall of Wickets</div><div class="fow-chips">${fowChips}</div></div>` : ''}
+  `;
+}
+
+// ─── Scorecard ────────────────────────────────────────────────
+async function loadScorecard() {
+  try {
+    const res = await fetch(`/api/match/${MATCH_ID}`);
+    scorecardData = await res.json();
+    renderScorecard(scorecardData);
+  } catch(e) {
+    document.getElementById('scorecardContent').innerHTML = '<div class="empty-state">Could not load scorecard.</div>';
+  }
+}
+
+function renderScorecard(data) {
+  document.getElementById('scLoading').style.display = 'none';
+  if(!data || !data.innings || !data.innings.length) {
+    document.getElementById('scorecardContent').innerHTML = '<div class="empty-state">Match not started yet.</div>';
+    return;
+  }
+
+  let html = '';
+  data.innings.forEach((inn, idx) => {
+    const totalOvers = inn.balls ? `${Math.floor(inn.balls/6)}.${inn.balls%6}` : '0.0';
+    const isOpen = idx === data.innings.length - 1;
+
+    html += `
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div class="innings-header" onclick="toggleInnings(${idx})">
+          <div>
+            <div class="ih-team">${inn.batting_team}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Innings ${inn.innings_num} · ${totalOvers} ov</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="ih-score">${inn.runs}/${inn.wickets}</div>
+            <div class="ih-chevron ${isOpen ? 'open' : ''}" id="chev-${idx}">▼</div>
+          </div>
+        </div>
+        <div class="innings-body ${isOpen ? 'open' : ''}" id="body-${idx}">
+          <div style="padding:12px 14px;">
+            ${renderBattingCard(inn)}
+            <div class="section-divider"></div>
+            ${renderBowlingCard(inn)}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('scorecardContent').innerHTML = html;
+}
+
+function toggleInnings(idx) {
+  const body = document.getElementById(`body-${idx}`);
+  const chev = document.getElementById(`chev-${idx}`);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function renderBattingCard(inn) {
+  const batters = inn.batters || [];
+  const teamSR = inn.balls > 0 ? (inn.runs / inn.balls * 100).toFixed(0) : '0';
+
+  let rows = '';
+  batters.forEach(b => {
+    const sr = b.balls > 0 ? (b.runs / b.balls * 100).toFixed(0) : (b.did_bat ? '0' : '—');
+    let nameCls = 'bat-name';
+    if(!b.did_bat) nameCls += ' bat-dnb';
+    else if(b.out) nameCls += ' bat-out';
+    else nameCls += ' bat-active';
+
+    const outMode = b.out ? `<span class="bat-outmode">${b.out_desc || 'out'}</span>` : (!b.did_bat ? '<span class="bat-outmode">DNB</span>' : '<span class="bat-outmode" style="color:var(--green);">not out</span>');
+
+    rows += `
+      <tr>
+        <td><span class="${nameCls}">${b.player_name}</span>${outMode}</td>
+        <td class="runs-cell ${b.runs >= 50 ? 'highlight-four' : ''}">${b.did_bat ? b.runs : '—'}</td>
+        <td>${b.balls || '—'}</td>
+        <td>${b.did_bat ? sr : '—'}</td>
+        <td class="highlight-four">${b.fours || 0}</td>
+        <td class="highlight-six">${b.sixes || 0}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <div style="font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--neon);letter-spacing:2px;margin-bottom:8px;">BATTING</div>
+    <table class="sc-table">
+      <thead><tr><th>Batter</th><th>R</th><th>B</th><th>SR</th><th>4s</th><th>6s</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="sc-extras">Extras: ${inn.extras || 0} (${inn.wides||0}wd, ${inn.no_balls||0}nb)</div>
+    <div class="sc-total">
+      <span>TOTAL</span>
+      <span>${inn.runs}/${inn.wickets} (${Math.floor((inn.balls||0)/6)}.${(inn.balls||0)%6} ov)</span>
+    </div>
+  `;
+}
+
+function renderBowlingCard(inn) {
+  const bowlers = inn.bowlers || [];
+  if(!bowlers.length) return '';
+
+  let rows = '';
+  bowlers.forEach(bw => {
+    const overs = `${Math.floor(bw.balls_bowled/6)}.${bw.balls_bowled%6}`;
+    const eco = bw.balls_bowled > 0 ? (bw.runs / (bw.balls_bowled / 6)).toFixed(2) : '—';
+    rows += `
+      <tr>
+        <td><span class="bat-name">${bw.player_name}</span></td>
+        <td>${overs}</td>
+        <td class="${bw.wickets >= 3 ? 'highlight-four' : ''}">${bw.wickets}</td>
+        <td>${bw.runs}</td>
+        <td>${eco}</td>
+        <td>${(bw.wides||0)+(bw.no_balls||0)}</td>
+      </tr>
+    `;
+  });
+
+  return `
+    <div style="font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--neon3);letter-spacing:2px;margin:8px 0;">BOWLING</div>
+    <table class="sc-table">
+      <thead><tr><th>Bowler</th><th>O</th><th>W</th><th>R</th><th>Eco</th><th>Ext</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// ─── Impact Scores ────────────────────────────────────────────
+async function loadImpact() {
+  document.getElementById('impLoading').style.display = 'block';
+  try {
+    const res = await fetch(`/api/impact/${MATCH_ID}/compute`, {method:'POST'});
+    impactData = await res.json();
+    renderImpact(impactData);
+  } catch(e) {
+    document.getElementById('impactContent').innerHTML = '<div class="empty-state">Impact data not available yet.</div>';
+  }
+}
+
+function renderImpact(data) {
+  document.getElementById('impLoading').style.display = 'none';
+  if(!data || !data.leaderboard) {
+    document.getElementById('impactContent').innerHTML = '<div class="empty-state">No impact data yet.</div>';
+    return;
+  }
+
+  const mom = data.man_of_the_match;
+  const maxScore = data.leaderboard[0]?.final_score || 100;
+
+  let momHtml = '';
+  if(mom && mom.player) {
+    momHtml = `
+      <div class="mom-card">
+        <div class="mom-trophy">🏆</div>
+        <div class="mom-label">MAN OF THE MATCH</div>
+        <div class="mom-name">${mom.player}</div>
+        <div class="mom-team">${mom.team}</div>
+        <div class="mom-score">${mom.score}</div>
+        <div class="mom-reasoning">${mom.reasoning || ''}</div>
+      </div>
+    `;
+  }
+
+  const mdiColor = data.mdi > 1.1 ? 'var(--neon4)' : data.mdi < 0.9 ? 'var(--neon2)' : 'var(--neon)';
+  const mdiHtml = `
+    <div class="mdi-bar">
+      <span style="font-size:0.8rem;color:var(--muted);">Match Difficulty Index (MDI)</span>
+      <span class="mdi-val" style="color:${mdiColor};">${data.mdi}</span>
+      <span style="font-size:0.78rem;color:var(--muted);">${data.mdi_label}</span>
+    </div>
+  `;
+
+  let leaderboardHtml = '';
+  data.leaderboard.forEach((p, i) => {
+    const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+    const batW = Math.min(100, (p.batting_impact / maxScore) * 100);
+    const bowlW = Math.min(100, (p.bowling_impact / maxScore) * 100);
+    const fieldW = Math.min(100, (p.fielding_impact / maxScore) * 100);
+
+    const c = p.components || {};
+    leaderboardHtml += `
+      <div style="margin-bottom:8px;">
+        <div class="impact-row" onclick="toggleBreakdown('bd-${i}')">
+          <div class="imp-rank ${rankCls}">#${i+1}</div>
+          <div>
+            <div class="imp-name">${p.player}</div>
+            <div class="imp-team">${p.team}</div>
+          </div>
+          <div class="imp-bars">
+            ${p.batting_impact > 0 ? `
+            <div class="imp-bar-row">
+              <span class="imp-bar-label">BAT</span>
+              <div class="imp-bar-bg"><div class="imp-bar-fill imp-bar-bat" style="width:${batW}%"></div></div>
+              <span style="font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--neon);min-width:28px;">${p.batting_impact}</span>
+            </div>` : ''}
+            ${p.bowling_impact > 0 ? `
+            <div class="imp-bar-row">
+              <span class="imp-bar-label">BOWL</span>
+              <div class="imp-bar-bg"><div class="imp-bar-fill imp-bar-bowl" style="width:${bowlW}%"></div></div>
+              <span style="font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--neon3);min-width:28px;">${p.bowling_impact}</span>
+            </div>` : ''}
+            ${p.fielding_impact > 0 ? `
+            <div class="imp-bar-row">
+              <span class="imp-bar-label">FIELD</span>
+              <div class="imp-bar-bg"><div class="imp-bar-fill imp-bar-field" style="width:${fieldW}%"></div></div>
+              <span style="font-family:'Orbitron',monospace;font-size:0.65rem;color:var(--green);min-width:28px;">${p.fielding_impact}</span>
+            </div>` : ''}
+          </div>
+          <div class="imp-score">${p.final_score}</div>
+        </div>
+        <div class="impact-breakdown" id="bd-${i}">
+          <div class="breakdown-grid">
+            <div class="bk-item"><div class="bk-val">${c.runs || 0}</div><div class="bk-label">Runs</div></div>
+            <div class="bk-item"><div class="bk-val">${c.strike_rate || 0}</div><div class="bk-label">SR Bonus</div></div>
+            <div class="bk-item"><div class="bk-val">${c.contribution || 0}</div><div class="bk-label">Contrib%</div></div>
+            <div class="bk-item"><div class="bk-val">${c.entry_pressure || 0}</div><div class="bk-label">Entry Press.</div></div>
+            <div class="bk-item"><div class="bk-val">${c.dynamic_pressure || 0}</div><div class="bk-label">Dyn. Press.</div></div>
+            <div class="bk-item"><div class="bk-val">${c.wickets || 0}</div><div class="bk-label">Wickets</div></div>
+            <div class="bk-item"><div class="bk-val">${c.economy || 0}</div><div class="bk-label">Economy</div></div>
+            <div class="bk-item"><div class="bk-val">${c.phase || 0}</div><div class="bk-label">Phase</div></div>
+          </div>
+          <div class="reasoning-text">${p.reasoning || ''}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('impactContent').innerHTML = momHtml + mdiHtml + `
+    <div class="card">
+      <div class="card-title">Impact Leaderboard</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px;">Tap a player to see impact breakdown</div>
+      ${leaderboardHtml}
+    </div>
+  `;
+}
+
+function toggleBreakdown(id) {
+  document.querySelectorAll('.impact-breakdown').forEach(el => {
+    if(el.id !== id) el.classList.remove('open');
+  });
+  document.getElementById(id).classList.toggle('open');
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+connect();
+// Also poll for live state in case WS hasn't delivered yet
+setTimeout(async () => {
+  if(!currentState) {
+    try {
+      const res = await fetch(`/api/match/${MATCH_ID}`);
+      const data = await res.json();
+      if(data && data.match) {
+        document.getElementById('liveLoading').style.display = 'none';
+        document.getElementById('liveScoreContent').innerHTML = `
+          <div class="empty-state">
+            <div style="font-size:2rem;margin-bottom:12px;">🏏</div>
+            <p>Match found. Waiting for live score updates...</p>
+            <p style="margin-top:8px;font-size:0.8rem;">Switch to Scorecard tab to see recorded data.</p>
+          </div>
+        `;
+      }
+    } catch(e) {}
+  }
+}, 2000);
+</script>
+</body>
+</html>
