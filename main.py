@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 import uvicorn
+from fastapi.responses import FileResponse
 import json
 
 from impact_engine import run_impact_for_match
@@ -125,9 +126,9 @@ class LiveStateRequest(BaseModel):
 
 # ── Page Routes ──────────────────────────────────────────────
 
-@app.get("/", response_class=HTMLResponse)
-async def root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/")
+async def root():
+    return FileResponse("templates/index.html")
 
 @app.get("/watch/{match_id}", response_class=HTMLResponse)
 async def watch(request: Request, match_id: int):
