@@ -25,7 +25,6 @@ def init_db():
             batting_first TEXT,
             status TEXT DEFAULT 'live',  -- live, completed, aborted
             result TEXT,
-            target INTEGER,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
         )
@@ -396,11 +395,79 @@ def get_impact_scores(match_id):
 def save_target_to_match(match_id, target):
     conn = get_db()
     c = conn.cursor()
-    # Add column if missing (backward compat)
     try:
         c.execute("ALTER TABLE matches ADD COLUMN target INTEGER")
-    except Exception:
-        pass
+    except: pass
     c.execute("UPDATE matches SET target=? WHERE id=?", (target, match_id))
     conn.commit()
     conn.close()
+
+def get_matches_grouped_by_date():
+    """Returns matches grouped by date, most recent first."""
+    conn = get_db()
+    c = conn.cursor()
+    rows = c.execute("""
+        SELECT 
+            m.*,
+            DATE(m.created_at) as match_date,
+            i1.runs as inn1_runs, i1.wickets as inn1_wkts, i1.balls as inn1_balls,
+            i1.batting_team as inn1_batting_team,
+            i2.runs as inn2_runs, i2.wickets as inn2_wkts, i2.balls as inn2_balls,
+            i2.batting_team as inn2_batting_team
+        FROM matches m
+        LEFT JOIN innings i1 ON i1.match_id=m.id AND i1.innings_num=1
+        LEFT JOIN innings i2 ON i2.match_id=m.id AND i2.innings_num=2
+        WHERE m.status IN ('completed','aborted')
+        ORDER BY m.created_at DESC
+    """).fetchall()
+    conn.close()
+
+    # Group by date
+    from collections import OrderedDict
+    grouped = OrderedDict()
+    for r in rows:
+        d = dict(r)
+        date = d.get('match_date','Unknown')
+        if date not in grouped:
+            grouped[date] = []
+        grouped[date].append(d)
+    return grouped
+
+
+
+def get_full_scorecard(match_id):
+    """Returns complete scorecard for a match."""
+    conn = get_db()
+    c = conn.cursor()
+    match = c.execute("SELECT * FROM matches WHERE id=?", (match_id,)).fetchone()
+    if not match:
+        conn.close()
+        return None
+    innings = c.execute(
+        "SELECT * FROM innings WHERE match_id=? ORDER BY innings_num", (match_id,)
+    ).fetchall()
+
+    result = {"match": dict(match), "innings": []}
+    for inn in innings:
+        inn_dict = dict(inn)
+        batters = c.execute(
+            "SELECT * FROM batter_innings WHERE innings_id=? ORDER BY id", (inn['id'],)
+        ).fetchall()
+        bowlers = c.execute(
+            "SELECT * FROM bowler_innings WHERE innings_id=? ORDER BY id", (inn['id'],)
+        ).fetchall()
+        fow = c.execute(
+            """SELECT b.batter, b.over_num, b.ball_num,
+               SUM(b2.runs) OVER (ORDER BY b2.id) as score_at_fall
+               FROM balls b
+               JOIN balls b2 ON b2.innings_id=b.innings_id AND b2.id<=b.id
+               WHERE b.innings_id=? AND b.wicket=1
+               ORDER BY b.id""",
+            (inn['id'],)
+        ).fetchall()
+        inn_dict['batters'] = [dict(b) for b in batters]
+        inn_dict['bowlers'] = [dict(b) for b in bowlers]
+        inn_dict['fow'] = [dict(f) for f in fow]
+        result['innings'].append(inn_dict)
+    conn.close()
+    return result
