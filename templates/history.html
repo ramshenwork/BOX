@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CricketLive — Match History</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#F0F4F8;--bg2:#E2EAF0;--card:#FFFFFF;--card2:#F7FAFC;
+  --blue:#006DB7;--blue2:#0082D8;--blue-light:#EFF6FF;
+  --red:#DC2626;--green:#16A34A;--amber:#D97706;
+  --text:#0F172A;--muted:#64748B;--border:#D1E3F0;
+  --shadow:0 1px 4px rgba(0,0,0,0.07);
+  --radius:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:15px;}
+
+/* ── HEADER ── */
+.header{
+  background:var(--blue);padding:0 20px;
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 8px rgba(0,109,183,0.3);
+}
+.header-inner{
+  max-width:700px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  height:52px;
+}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:2px;color:#fff;}
+.logo span{color:#FFD700;}
+.nav-links{display:flex;gap:8px;}
+.nav-link{
+  color:rgba(255,255,255,0.8);text-decoration:none;
+  font-size:0.78rem;font-weight:600;padding:5px 10px;
+  border-radius:6px;transition:all 0.15s;
+}
+.nav-link:hover,.nav-link.active{background:rgba(255,255,255,0.15);color:#fff;}
+
+/* ── SCREENS ── */
+.screen{display:none;}
+.screen.active{display:block;}
+
+.page{max-width:700px;margin:0 auto;padding:16px;}
+
+/* ── DATE LIST SCREEN ── */
+.screen-title{
+  font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;
+  color:var(--blue);margin-bottom:16px;padding-bottom:10px;
+  border-bottom:2px solid var(--border);
+}
+
+.date-group{margin-bottom:8px;}
+.date-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:var(--blue);border-radius:var(--radius);
+  cursor:pointer;transition:background 0.15s;user-select:none;
+}
+.date-header:hover{background:var(--blue2);}
+.date-label{font-weight:700;font-size:0.92rem;color:#fff;display:flex;align-items:center;gap:8px;}
+.date-count{
+  background:rgba(255,255,255,0.2);color:#fff;
+  font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:20px;
+}
+.date-chevron{color:rgba(255,255,255,0.7);font-size:0.75rem;transition:transform 0.2s;}
+.date-chevron.open{transform:rotate(180deg);}
+
+.date-matches{
+  max-height:0;overflow:hidden;transition:max-height 0.3s ease;
+  border:1px solid var(--border);border-top:none;
+  border-radius:0 0 var(--radius) var(--radius);background:var(--card);
+}
+.date-matches.open{max-height:2000px;}
+
+/* ── MATCH CARD ── */
+.match-card{
+  padding:14px 16px;border-bottom:1px solid #F1F5F9;
+  cursor:pointer;transition:background 0.15s;
+}
+.match-card:last-child{border-bottom:none;}
+.match-card:hover{background:var(--blue-light);}
+.match-teams{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;}
+.team-row{display:flex;justify-content:space-between;align-items:center;}
+.team-name{font-weight:700;font-size:0.92rem;color:var(--text);}
+.team-name.batting-first{color:var(--blue);}
+.team-score{font-family:'Bebas Neue',sans-serif;font-size:1rem;color:var(--text);letter-spacing:1px;}
+.team-overs{font-size:0.72rem;color:var(--muted);margin-left:4px;}
+.match-result{
+  font-size:0.78rem;font-weight:600;
+  padding:3px 10px;border-radius:20px;display:inline-block;margin-top:4px;
+}
+.result-win{background:#DCFCE7;color:var(--green);}
+.result-loss{background:#FEE2E2;color:var(--red);}
+.result-tie{background:#FEF3C7;color:var(--amber);}
+.result-aborted{background:#F1F5F9;color:var(--muted);}
+.match-meta{font-size:0.72rem;color:var(--muted);margin-top:2px;}
+.match-arrow{color:var(--muted);font-size:0.8rem;}
+
+/* ── SCORECARD SCREEN ── */
+.back-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  color:var(--blue);font-weight:600;font-size:0.85rem;
+  cursor:pointer;margin-bottom:16px;padding:6px 0;
+}
+.back-btn:hover{text-decoration:underline;}
+
+.sc-match-header{
+  background:var(--blue);border-radius:var(--radius);
+  padding:18px 20px;margin-bottom:16px;
+  position:relative;overflow:hidden;
+}
+.sc-match-header::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,#FFD700,#FFA500);
+}
+.sc-teams{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:2px;color:#fff;margin-bottom:8px;}
+.sc-scores-row{display:flex;gap:24px;flex-wrap:wrap;}
+.sc-innings-score{display:flex;flex-direction:column;}
+.sc-inn-label{font-size:0.65rem;color:rgba(255,255,255,0.65);letter-spacing:2px;text-transform:uppercase;}
+.sc-inn-score{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:#fff;line-height:1.1;}
+.sc-inn-overs{font-size:0.75rem;color:rgba(255,255,255,0.75);}
+.sc-result{
+  margin-top:10px;padding:6px 12px;border-radius:6px;
+  background:rgba(255,255,255,0.15);color:#fff;
+  font-size:0.82rem;font-weight:600;display:inline-block;
+}
+.sc-date{font-size:0.75rem;color:rgba(255,255,255,0.65);margin-top:6px;}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:var(--shadow);}
+.card-title{font-size:0.68rem;font-weight:700;color:var(--blue);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';display:inline-block;width:3px;height:13px;background:var(--blue);border-radius:2px;}
+
+/* ── SCORECARD TABLES ── */
+.sc-table{width:100%;border-collapse:collapse;font-size:0.83rem;min-width:320px;}
+.sc-table th{
+  font-size:0.6rem;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);padding:6px 8px;border-bottom:2px solid #E2EAF0;
+  text-align:left;font-weight:700;white-space:nowrap;
+}
+.sc-table th:not(:first-child){text-align:right;}
+.sc-table td{padding:7px 8px;border-bottom:1px solid #F1F5F9;vertical-align:top;}
+.sc-table td:not(:first-child){text-align:right;font-size:0.8rem;color:var(--text);}
+.sc-table tr:last-child td{border-bottom:none;}
+.sc-table tr:hover td{background:#F8FAFC;}
+.p-name{font-weight:600;color:var(--text);font-size:0.85rem;}
+.p-notout{color:var(--green)!important;}
+.p-out{color:var(--muted);}
+.p-dnb{color:#94A3B8;font-style:italic;}
+.p-ret{color:var(--amber);}
+.p-outmode{display:block;font-size:0.7rem;color:var(--muted);font-weight:400;margin-top:1px;}
+.runs-big{font-weight:700;font-size:0.9rem;}
+.runs-fifty{color:var(--blue);}
+.runs-hundred{color:var(--amber);}
+.four-val{color:var(--amber);}
+.six-val{color:var(--blue);}
+.wkt-val{color:var(--red);font-weight:700;}
+.sc-total-row{
+  display:flex;justify-content:space-between;padding:8px 0 0;
+  font-family:'Bebas Neue',sans-serif;font-size:0.95rem;letter-spacing:1px;
+  border-top:2px solid var(--border);margin-top:6px;color:var(--text);
+}
+.sc-extras{font-size:0.78rem;color:var(--muted);padding:6px 0;border-top:1px solid #F1F5F9;margin-top:4px;}
+
+.fow-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.fow-chip{
+  padding:3px 9px;border-radius:20px;
+  border:1px solid #FCA5A5;background:#FFF5F5;
+  font-size:0.72rem;font-weight:600;color:var(--red);
+}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:60px 20px;}
+.empty-icon{font-size:3rem;margin-bottom:12px;}
+.empty-title{font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:2px;color:var(--blue);margin-bottom:8px;}
+.empty-sub{color:var(--muted);font-size:0.88rem;}
+
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:0.82rem;letter-spacing:1px;}
+
+/* ── TABLE SCROLL WRAPPER ── */
+.table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">Cricket<span>Live</span></div>
+    <div class="nav-links">
+      <a href="/" class="nav-link">🏏 Score</a>
+      <a href="/history" class="nav-link active">📋 Matches</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 1: DATE LIST ══ -->
+<div class="screen active" id="screen-dates">
+  <div class="page">
+    <div class="screen-title">PAST MATCHES</div>
+    <div id="datesList">
+      <div class="loading">Loading matches...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: FULL SCORECARD ══ -->
+<div class="screen" id="screen-scorecard">
+  <div class="page">
+    <div class="back-btn" onclick="goBack()">← Back to matches</div>
+    <div id="scorecardContent"></div>
+  </div>
+</div>
+
+<script>
+let allData = [];
+
+// ── Load matches ──────────────────────────────────────────────
+async function loadMatches() {
+  try {
+    const res = await fetch('/api/history/matches');
+    allData = await res.json();
+    renderDateList(allData);
+  } catch(e) {
+    document.getElementById('datesList').innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🏏</div>
+        <div class="empty-title">NO MATCHES YET</div>
+        <div class="empty-sub">Completed matches will appear here.</div>
+      </div>`;
+  }
+}
+
+// ── Render date groups ────────────────────────────────────────
+function renderDateList(groups) {
+  const container = document.getElementById('datesList');
+  if (!groups.length) {
+    container.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🏏</div>
+        <div class="empty-title">NO MATCHES YET</div>
+        <div class="empty-sub">Score a match to see history here.</div>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = groups.map((g, gi) => {
+    const dateLabel = formatDate(g.date);
+    const matchCards = g.matches.map(m => renderMatchCard(m)).join('');
+    return `
+      <div class="date-group">
+        <div class="date-header" onclick="toggleDate(${gi})">
+          <div class="date-label">
+            📅 ${dateLabel}
+            <span class="date-count">${g.matches.length} match${g.matches.length > 1 ? 'es' : ''}</span>
+          </div>
+          <div class="date-chevron ${gi === 0 ? 'open' : ''}" id="chev-${gi}">▼</div>
+        </div>
+        <div class="date-matches ${gi === 0 ? 'open' : ''}" id="dm-${gi}">
+          ${matchCards}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleDate(gi) {
+  const dm = document.getElementById(`dm-${gi}`);
+  const chev = document.getElementById(`chev-${gi}`);
+  dm.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function renderMatchCard(m) {
+  const inn1Team = m.inn1_batting_team || m.team1;
+  const inn2Team = m.inn2_batting_team || m.team2;
+  const inn1Score = m.inn1_runs != null ? `${m.inn1_runs}/${m.inn1_wkts}` : '—';
+  const inn1Ov = m.inn1_balls != null ? `(${Math.floor(m.inn1_balls/6)}.${m.inn1_balls%6} ov)` : '';
+  const inn2Score = m.inn2_runs != null ? `${m.inn2_runs}/${m.inn2_wkts}` : 'Yet to bat';
+  const inn2Ov = m.inn2_balls != null ? `(${Math.floor(m.inn2_balls/6)}.${m.inn2_balls%6} ov)` : '';
+
+  let resultCls = 'result-aborted';
+  if (m.status === 'completed' && m.result) {
+    resultCls = 'result-win';
+  } else if (m.status === 'aborted') {
+    resultCls = 'result-aborted';
+  }
+
+  const resultText = m.status === 'aborted' ? 'Match Aborted' : (m.result || 'Completed');
+  const time = m.created_at ? new Date(m.created_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}) : '';
+
+  return `
+    <div class="match-card" onclick="loadScorecard(${m.id})">
+      <div class="match-teams">
+        <div class="team-row">
+          <span class="team-name batting-first">${inn1Team}</span>
+          <span>
+            <span class="team-score">${inn1Score}</span>
+            <span class="team-overs">${inn1Ov}</span>
+          </span>
+        </div>
+        <div class="team-row">
+          <span class="team-name">${inn2Team}</span>
+          <span>
+            <span class="team-score">${inn2Score}</span>
+            <span class="team-overs">${inn2Ov}</span>
+          </span>
+        </div>
+      </div>
+      <div>
+        <span class="match-result ${resultCls}">${resultText}</span>
+        <div class="match-meta">${m.total_overs} overs · ${time ? time + ' · ' : ''}${m.team1} vs ${m.team2}</div>
+      </div>
+    </div>`;
+}
+
+// ── Load full scorecard ───────────────────────────────────────
+async function loadScorecard(matchId) {
+  document.getElementById('screen-dates').classList.remove('active');
+  document.getElementById('screen-scorecard').classList.add('active');
+  document.getElementById('scorecardContent').innerHTML = '<div class="loading">Loading scorecard...</div>';
+  window.scrollTo(0, 0);
+
+  try {
+    const res = await fetch(`/api/history/scorecard/${matchId}`);
+    const data = await res.json();
+    renderScorecard(data);
+  } catch(e) {
+    document.getElementById('scorecardContent').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">ERROR</div><div class="empty-sub">Could not load scorecard.</div></div>';
+  }
+}
+
+function goBack() {
+  document.getElementById('screen-scorecard').classList.remove('active');
+  document.getElementById('screen-dates').classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── Render full scorecard ─────────────────────────────────────
+function renderScorecard(data) {
+  const m = data.match;
+  const innings = data.innings || [];
+  const date = m.created_at ? new Date(m.created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '';
+
+  // Scores for header
+  const inn1 = innings.find(i => i.innings_num === 1);
+  const inn2 = innings.find(i => i.innings_num === 2);
+
+  let scoresHtml = '';
+  if (inn1) {
+    scoresHtml += `
+      <div class="sc-innings-score">
+        <div class="sc-inn-label">${inn1.batting_team}</div>
+        <div class="sc-inn-score">${inn1.runs}/${inn1.wickets}</div>
+        <div class="sc-inn-overs">${Math.floor(inn1.balls/6)}.${inn1.balls%6} ov</div>
+      </div>`;
+  }
+  if (inn2 && inn2.balls > 0) {
+    scoresHtml += `
+      <div class="sc-innings-score">
+        <div class="sc-inn-label">${inn2.batting_team}</div>
+        <div class="sc-inn-score">${inn2.runs}/${inn2.wickets}</div>
+        <div class="sc-inn-overs">${Math.floor(inn2.balls/6)}.${inn2.balls%6} ov</div>
+      </div>`;
+  }
+
+  let html = `
+    <div class="sc-match-header">
+      <div class="sc-teams">${m.team1} vs ${m.team2}</div>
+      <div class="sc-scores-row">${scoresHtml}</div>
+      <div class="sc-result">${m.result || (m.status === 'aborted' ? 'Match Aborted' : 'In Progress')}</div>
+      <div class="sc-date">📅 ${date} · ${m.total_overs} overs</div>
+    </div>`;
+
+  // Each innings
+  innings.forEach(inn => {
+    html += renderInningsBatting(inn);
+    html += renderInningsBowling(inn);
+  });
+
+  document.getElementById('scorecardContent').innerHTML = html;
+}
+
+function renderInningsBatting(inn) {
+  const label = inn.innings_num === 1 ? '1ST' : '2ND';
+  const batters = inn.batters || [];
+  const fow = inn.fow || [];
+
+  let rows = '';
+  batters.forEach(b => {
+    const sr = b.balls > 0 ? (b.runs / b.balls * 100).toFixed(0) : '—';
+    let nameCls = 'p-name';
+    let statusLine = '';
+
+    if (b.out) {
+      nameCls += ' p-out';
+      statusLine = `<span class="p-outmode">${b.out_desc || 'out'}</span>`;
+    } else if (!b.did_bat) {
+      nameCls += ' p-dnb';
+      statusLine = `<span class="p-outmode">did not bat</span>`;
+    } else {
+      nameCls += ' p-notout';
+      statusLine = `<span class="p-outmode" style="color:var(--green)">not out</span>`;
+    }
+
+    const runsCls = b.runs >= 100 ? 'runs-big runs-hundred' : b.runs >= 50 ? 'runs-big runs-fifty' : 'runs-big';
+    const runsVal = b.did_bat ? `<span class="${runsCls}">${b.runs}</span>` : '—';
+
+    rows += `<tr>
+      <td><span class="${nameCls}">${b.player_name}</span>${statusLine}</td>
+      <td>${runsVal}</td>
+      <td>${b.did_bat ? b.balls : '—'}</td>
+      <td>${b.did_bat ? sr : '—'}</td>
+      <td class="four-val">${b.fours || 0}</td>
+      <td class="six-val">${b.sixes || 0}</td>
+    </tr>`;
+  });
+
+  const fowHtml = fow.length
+    ? `<div class="fow-wrap">${fow.map(f => `<div class="fow-chip">${f.batter || ''}</div>`).join('')}</div>`
+    : '';
+
+  return `
+    <div class="card">
+      <div class="card-title">${label} INNINGS — ${inn.batting_team} BATTING</div>
+      <div class="table-scroll">
+        <table class="sc-table">
+          <thead><tr><th>Batter</th><th>R</th><th>B</th><th>SR</th><th>4s</th><th>6s</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="sc-extras">Extras: ${inn.extras || 0} &nbsp;(${inn.wides || 0} wd, ${inn.no_balls || 0} nb)</div>
+      <div class="sc-total-row">
+        <span>TOTAL</span>
+        <span>${inn.runs}/${inn.wickets} &nbsp;(${Math.floor(inn.balls/6)}.${inn.balls%6} ov)</span>
+      </div>
+      ${fowHtml ? `<div style="margin-top:10px;"><div style="font-size:0.65rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Fall of Wickets</div>${fowHtml}</div>` : ''}
+    </div>`;
+}
+
+function renderInningsBowling(inn) {
+  const label = inn.innings_num === 1 ? '1ST' : '2ND';
+  const bowlers = (inn.bowlers || []).filter(b => b.balls_bowled > 0);
+  if (!bowlers.length) return '';
+
+  let rows = bowlers.map(b => {
+    const overs = `${Math.floor(b.balls_bowled/6)}.${b.balls_bowled%6}`;
+    const eco = b.balls_bowled > 0 ? (b.runs / (b.balls_bowled / 6)).toFixed(2) : '—';
+    return `<tr>
+      <td><span class="p-name">${b.player_name}</span></td>
+      <td>${overs}</td>
+      <td class="wkt-val">${b.wickets}</td>
+      <td>${b.runs}</td>
+      <td>${eco}</td>
+      <td>${(b.wides || 0) + (b.no_balls || 0)}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="card">
+      <div class="card-title">${label} INNINGS — ${inn.bowling_team} BOWLING</div>
+      <div class="table-scroll">
+        <table class="sc-table">
+          <thead><tr><th>Bowler</th><th>O</th><th>W</th><th>R</th><th>Eco</th><th>Ext</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function formatDate(dateStr) {
+  if (!dateStr || dateStr === 'Unknown') return 'Unknown Date';
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+
+  const fmt = d.toLocaleDateString('en-GB', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  const dStr = d.toDateString();
+  if (dStr === today.toDateString()) return `Today — ${d.toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'})}`;
+  if (dStr === yesterday.toDateString()) return `Yesterday — ${d.toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'})}`;
+  return fmt;
+}
+
+// ── Init ──────────────────────────────────────────────────────
+loadMatches();
+</script>
+</body>
+</html>

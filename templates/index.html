@@ -332,7 +332,7 @@ body::before{
   <div class="logo">Cricket<span>Live</span></div>
   <div class="nav-links">
     <a id="scorecardLink" href="#" class="nav-link highlight" style="display:none;" target="_blank">📋 Scorecard</a>
-    <a href="/stats" class="nav-link" target="_blank">📊 Stats</a>
+    <a href="/history" class="nav-link" target="_blank">📋 Matches</a>
     <div class="view-toggle">
       <button class="view-btn" id="btnMobile" onclick="setView('mobile')">📱</button>
       <button class="view-btn" id="btnDesktop" onclick="setView('desktop')">🖥</button>
@@ -503,11 +503,33 @@ body::before{
     <button class="btn btn-outline btn-sm" onclick="undoLast()">↩ UNDO LAST BALL</button>
     <button style="background:transparent;border:1px solid var(--red);color:var(--red);padding:8px 18px;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:8px;font-size:0.85rem;" onclick="confirmAbort()">⛔ ABORT MATCH</button>
     <button style="background:transparent;border:1px solid var(--neon4);color:#F59E0B;padding:8px 18px;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:8px;font-size:0.85rem;" onclick="openChangeBatter()">🔄 CHANGE BATTER</button>
+    <button style="background:transparent;border:1px solid var(--green);color:var(--green);padding:8px 18px;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:8px;font-size:0.85rem;" onclick="openExtendInnings()">➕ EXTEND INNINGS</button>
+    <button style="background:transparent;border:1px solid #7C3AED;color:#7C3AED;padding:8px 18px;font-family:'Inter',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;border-radius:8px;font-size:0.85rem;" onclick="confirmEndInningsEarly()">🏁 END INNINGS</button>
     <div id="spectatorBar" style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--muted);">
       <span id="spectatorDot" style="width:8px;height:8px;border-radius:50%;background:var(--neon);display:inline-block;"></span>
       <span id="spectatorCount">0</span> watching &nbsp;
       <span style="color:#00D4FF;cursor:pointer;" onclick="copyWatchLink()">📋 Copy watch link</span>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Extend Innings -->
+<div class="modal-overlay" id="modalExtendInnings">
+  <div class="modal">
+    <h2>EXTEND INNINGS</h2>
+    <p style="color:var(--muted);font-size:0.85rem;margin-bottom:16px;" id="extendCurrentInfo">Current overs: —</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <button class="modal-btn" onclick="extendInnings(1)">+1 Over</button>
+      <button class="modal-btn" onclick="extendInnings(2)">+2 Overs</button>
+      <button class="modal-btn" onclick="extendInnings(3)">+3 Overs</button>
+      <button class="modal-btn" onclick="extendInnings(5)">+5 Overs</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;">
+      <input type="number" id="extendCustomOvers" min="1" max="20" placeholder="Custom overs"
+        style="flex:1;background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-family:Inter,sans-serif;font-size:0.95rem;outline:none;"/>
+      <button class="btn btn-neon btn-sm" onclick="extendInningsCustom()">ADD</button>
+    </div>
+    <button class="btn btn-outline btn-full" onclick="closeModal('modalExtendInnings')">CANCEL</button>
   </div>
 </div>
 
@@ -548,6 +570,19 @@ body::before{
       <select id="selBowler2"></select>
     </div>
     <button class="btn btn-neon btn-full" onclick="startSecondInnings()">▶ START 2ND INNINGS</button>
+  </div>
+
+  <!-- Continue 1st innings option -->
+  <div class="card" id="continueInningsCard" style="border:1.5px solid #16A34A;background:#F0FDF4;">
+    <div class="card-title" style="color:#16A34A;">↩ MADE A MISTAKE?</div>
+    <p style="font-size:0.85rem;color:#64748B;margin-bottom:14px;">If the innings ended by accident, you can go back and continue scoring — and add more overs if needed.</p>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;">
+      <label style="font-size:0.75rem;font-weight:700;color:#64748B;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;">Add overs:</label>
+      <input type="number" id="continueExtraOvers" min="0" max="50" value="0" placeholder="0"
+        style="width:80px;background:#fff;border:1.5px solid #D1E3F0;border-radius:8px;padding:8px 10px;color:#0F172A;font-family:Inter,sans-serif;font-size:0.95rem;outline:none;text-align:center;"/>
+      <span style="font-size:0.82rem;color:#64748B;">extra overs (0 = same overs)</span>
+    </div>
+    <button class="btn btn-full" style="background:#16A34A;color:#fff;box-shadow:0 2px 8px rgba(22,163,74,0.3);" onclick="continueFirstInnings()">↩ CONTINUE 1ST INNINGS</button>
   </div>
 </div>
 
@@ -671,7 +706,7 @@ body::before{
     <p style="color:var(--muted);font-size:0.9rem;margin-bottom:24px;">What would you like to do?</p>
     <div style="display:flex;flex-direction:column;gap:10px;">
       <button class="btn btn-neon btn-full" onclick="closeModal('modalWelcome')">📝 SCORE A MATCH</button>
-      <button class="btn btn-outline btn-full" onclick="goToStats()">📊 VIEW STATS</button>
+      <button class="btn btn-outline btn-full" onclick="window.location.href='/history'">📋 PAST MATCHES</button>
     </div>
   </div>
 </div>
@@ -718,12 +753,17 @@ function freshInnings(battingTeamIdx, bowlingTeamIdx) {
 //  SETUP
 // ============================================================
 function initPlayerInputs() {
+  const defaultPlayers = [
+    ["Rakshith Reddy","Satwik Reddy","Shiva Vara Prasad","Tarun Kumar","Sushanth","Charan","Hemanth","Vasu"],
+    ["Sushen","Lalith","Nithin","Vikas","Akash","Pramod","Prajith","Pavan"]
+  ];
   const n = parseInt(document.getElementById('playerCount').value)||11;
   ['team1Players','team2Players'].forEach((id,ti)=>{
     const div = document.getElementById(id);
     div.innerHTML='';
     for(let i=1;i<=n;i++){
-      div.innerHTML+=`<div class="player-input"><span class="player-num">#${i}</span><input type="text" placeholder="Player ${i}" id="p${ti}_${i}"/></div>`;
+      const preset = defaultPlayers[ti][i-1] || '';
+      div.innerHTML+=`<div class="player-input"><span class="player-num">#${i}</span><input type="text" placeholder="Player ${i}" id="p${ti}_${i}" value="${preset}"/></div>`;
     }
   });
   document.getElementById('team1CardTitle').textContent=(document.getElementById('team1Name').value||'Team 1')+' Players';
@@ -895,8 +935,10 @@ async function score(event){
     }
     if(!checkInningsEnd()){
       if(wicket){
-        // New batter always comes in at striker end after wicket + end of over
-        promptNewBatter(true, ()=>promptNewBowler());
+        // After end-of-over rotation, the dismissed batter (was striker) is now
+        // at the non-striker end. New batter replaces them there.
+        // So new batter → non-striker end (false), survivor faces next over as striker.
+        promptNewBatter(false, ()=>promptNewBowler());
       } else {
         promptNewBowler();
       }
@@ -922,10 +964,12 @@ async function score(event){
 function checkInningsEnd(){
   const inn=G.inn;
   const maxBalls=G.totalOvers*6;
-  // Count active batters: not out, not retired
-  const activeBatters=inn.batters.filter(b=>!b.out&&!b.retired).length;
-  if(inn.wickets>=inn.batters.length-1||inn.balls>=maxBalls){endInnings();return true;}
-  if(G.innings===1&&G.target!==null&&inn.runs>=G.target){endInnings();return true;}
+  const allOut=inn.wickets>=inn.batters.length-1;
+  const oversUp=inn.balls>=maxBalls;
+  const chaseWon=G.innings===1&&G.target!==null&&inn.runs>=G.target;
+  if(allOut){ G.innEndReason='allout'; endInnings(); return true; }
+  if(oversUp){ G.innEndReason='overs'; endInnings(); return true; }
+  if(chaseWon){ G.innEndReason='chase'; endInnings(); return true; }
   return false;
 }
 
@@ -1261,6 +1305,17 @@ async function endInnings(){
         — RRR: <b style="color:#F59E0B;">${(G.target/G.totalOvers).toFixed(2)}</b>
       </p>`;
     populateBattingSelect(1);
+
+    // Show/hide continue innings card based on WHY innings ended
+    const continueCard = document.getElementById('continueInningsCard');
+    if(G.innEndReason === 'overs' || G.innEndReason === 'manual'){
+      // Overs finished or manually ended — can extend and continue
+      continueCard.style.display = 'block';
+    } else {
+      // All out — no wickets left, can't continue
+      continueCard.style.display = 'none';
+    }
+
     showSection('sec-break');
   } else {
     showResult();
@@ -1541,7 +1596,7 @@ function toast(msg){
 
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
 
-function goToStats(){ window.location.href='/stats'; }
+function goToStats(){ window.location.href='/history'; }
 
 function setView(v){
   G.isMobile=v==='mobile';
@@ -1553,8 +1608,102 @@ function setView(v){
 function autoDetectView(){
   setView(window.innerWidth<600?'mobile':'desktop');
 }
+// ============================================================
+//  CONTINUE 1ST INNINGS (from break screen)
+// ============================================================
+function continueFirstInnings(){
+  const extraOvers = parseInt(document.getElementById('continueExtraOvers').value) || 0;
+  if(extraOvers < 0){ toast('Enter 0 or more overs'); return; }
+
+  // Add the extra overs
+  if(extraOvers > 0){
+    G.totalOvers += extraOvers;
+    toast(`Innings continued! ${extraOvers} over${extraOvers>1?'s':''} added. Total: ${G.totalOvers} overs`);
+  } else {
+    toast('Innings continued!');
+  }
+
+  // Clear target since innings isn't over
+  G.target = null;
+
+  // Go back to live scoring with the 1st innings still active
+  showSection('sec-live');
+  render();
+}
+
+// ============================================================
+//  EXTEND INNINGS
+// ============================================================
+function openExtendInnings(){
+  const inn = G.inn;
+  if(!inn){ toast('No innings in progress'); return; }
+  const current = Math.floor(inn.balls/6);
+  document.getElementById('extendCurrentInfo').textContent =
+    `Balls bowled: ${inn.balls} | Current max: ${G.totalOvers} overs | Balls left: ${G.totalOvers*6 - inn.balls}`;
+  document.getElementById('extendCustomOvers').value = '';
+  document.getElementById('modalExtendInnings').classList.add('active');
+}
+
+function extendInnings(overs){
+  G.totalOvers += overs;
+  closeModal('modalExtendInnings');
+  toast(`Innings extended by ${overs} over${overs>1?'s':''}! New total: ${G.totalOvers} overs`);
+  render();
+}
+
+function extendInningsCustom(){
+  const val = parseInt(document.getElementById('extendCustomOvers').value);
+  if(!val || val < 1 || val > 50){
+    toast('Enter a valid number of overs (1–50)');
+    return;
+  }
+  extendInnings(val);
+}
+
+// ============================================================
+//  END INNINGS EARLY
+// ============================================================
+function confirmEndInningsEarly(){
+  const inn = G.inn;
+  if(!inn){ toast('No innings in progress'); return; }
+  const overs = Math.floor(inn.balls/6);
+  const balls = inn.balls % 6;
+  if(!confirm(`End innings now?\n\nCurrent score: ${inn.runs}/${inn.wickets} in ${overs}.${balls} overs\n\nThis cannot be undone.`)){
+    return;
+  }
+  G.innEndReason = 'manual';
+  endInnings();
+}
+
 autoDetectView();
 window.addEventListener('resize',autoDetectView);
+
+// ── Back button / refresh protection ──
+window.addEventListener('beforeunload', (e) => {
+  if(G.inn && G.inn.balls > 0 && !['sec-result','sec-aborted'].includes(getCurrentSection())){
+    e.preventDefault();
+    e.returnValue = 'Match in progress! If you leave, all scoring data will be lost.';
+    return e.returnValue;
+  }
+});
+
+// Intercept browser back button
+window.addEventListener('popstate', (e) => {
+  if(G.inn && G.inn.balls > 0 && !['sec-result','sec-aborted'].includes(getCurrentSection())){
+    history.pushState(null, '', window.location.href);
+    if(confirm('⚠️ Match in progress!\n\nGoing back will lose all scoring data.\n\nAre you sure you want to leave?')){
+      window.history.back();
+    }
+  }
+});
+
+// Push a state on load so popstate fires on first back press
+history.pushState(null, '', window.location.href);
+
+function getCurrentSection(){
+  const active = document.querySelector('.section.active');
+  return active ? active.id : '';
+}
 
 // ============================================================
 //  API & DB

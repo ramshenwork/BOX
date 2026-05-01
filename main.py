@@ -5,7 +5,6 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict
 import uvicorn
-from fastapi.responses import FileResponse
 import json
 
 from impact_engine import run_impact_for_match
@@ -15,12 +14,13 @@ from database import (
     complete_match, abort_match,
     get_all_matches, get_career_batting_stats, get_career_bowling_stats,
     get_match_detail, get_balls_for_match, store_impact_scores, get_impact_scores,
-    save_target_to_match
+    save_target_to_match, get_matches_grouped_by_date, get_full_scorecard
 )
 
 app = FastAPI(title="CricketLive Scorer")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+templates.env.cache = {}
 
 # ── WebSocket Connection Manager ─────────────────────────────
 class ConnectionManager:
@@ -126,9 +126,9 @@ class LiveStateRequest(BaseModel):
 
 # ── Page Routes ──────────────────────────────────────────────
 
-@app.get("/")
-async def root():
-    return FileResponse("templates/index.html")
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/watch/{match_id}", response_class=HTMLResponse)
 async def watch(request: Request, match_id: int):
@@ -250,6 +250,29 @@ async def websocket_watch(websocket: WebSocket, match_id: int):
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect_spectator(match_id, websocket)
+
+# ── History Page ────────────────────────────────────────────
+
+@app.get("/history", response_class=HTMLResponse)
+async def history_page(request: Request):
+    return templates.TemplateResponse("history.html", {"request": request})
+
+@app.get("/api/history/matches")
+async def api_history_matches():
+    """Returns matches grouped by date."""
+    grouped = get_matches_grouped_by_date()
+    # Convert OrderedDict to list for JSON
+    result = []
+    for date, matches in grouped.items():
+        result.append({"date": date, "matches": matches})
+    return result
+
+@app.get("/api/history/scorecard/{match_id}")
+async def api_history_scorecard(match_id: int):
+    data = get_full_scorecard(match_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Match not found")
+    return data
 
 # ── API: Impact Engine ──────────────────────────────────────
 
