@@ -25,6 +25,7 @@ def init_db():
             batting_first TEXT,
             status TEXT DEFAULT 'live',  -- live, completed, aborted
             result TEXT,
+            target INTEGER,
             created_at TEXT DEFAULT (datetime('now')),
             updated_at TEXT DEFAULT (datetime('now'))
         )
@@ -395,12 +396,15 @@ def get_impact_scores(match_id):
 def save_target_to_match(match_id, target):
     conn = get_db()
     c = conn.cursor()
+    # Add column if missing (backward compat)
     try:
         c.execute("ALTER TABLE matches ADD COLUMN target INTEGER")
-    except: pass
+    except Exception:
+        pass
     c.execute("UPDATE matches SET target=? WHERE id=?", (target, match_id))
     conn.commit()
     conn.close()
+
 
 def get_matches_grouped_by_date():
     """Returns matches grouped by date, most recent first."""
@@ -432,7 +436,6 @@ def get_matches_grouped_by_date():
             grouped[date] = []
         grouped[date].append(d)
     return grouped
-
 
 
 def get_full_scorecard(match_id):
