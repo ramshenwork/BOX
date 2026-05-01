@@ -20,7 +20,6 @@ from database import (
 app = FastAPI(title="CricketLive Scorer")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
-templates.env.cache = {}
 
 # ── WebSocket Connection Manager ─────────────────────────────
 class ConnectionManager:
